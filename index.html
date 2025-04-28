@@ -3,258 +3,137 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Advanced Color Code Converter</title>
+    <title>Color Converter - Simple Tool</title>
     <style>
-        :root {
-            --primary: #2ecc71;
-            --background: #f8f9fa;
-        }
-
         body {
             font-family: Arial, sans-serif;
-            max-width: 800px;
-            margin: 0 auto;
+            max-width: 600px;
+            margin: 20px auto;
             padding: 20px;
-            background: var(--background);
         }
 
-        .converter {
-            display: grid;
-            gap: 20px;
-            grid-template-columns: 1fr 1fr;
-        }
-
-        .color-preview {
-            height: 200px;
+        .container {
+            border: 2px solid #ddd;
+            padding: 20px;
             border-radius: 10px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .color-box {
+            width: 100%;
+            height: 100px;
+            border: 2px solid #333;
+            margin: 20px 0;
         }
 
         .input-group {
-            margin-bottom: 1rem;
+            margin: 15px 0;
         }
 
         input {
             width: 100%;
             padding: 10px;
             margin: 5px 0;
-            border: 2px solid #ddd;
-            border-radius: 5px;
-            font-family: monospace;
+            font-size: 16px;
         }
 
         button {
-            background: var(--primary);
+            background: #4CAF50;
             color: white;
             border: none;
             padding: 10px 20px;
-            border-radius: 5px;
+            margin: 5px;
             cursor: pointer;
-            margin-top: 5px;
-        }
-
-        .history {
-            display: flex;
-            gap: 10px;
-            margin-top: 20px;
-            flex-wrap: wrap;
-        }
-
-        .color-chip {
-            width: 40px;
-            height: 40px;
-            border-radius: 5px;
-            cursor: pointer;
-            border: 2px solid white;
-        }
-
-        @media (max-width: 600px) {
-            .converter {
-                grid-template-columns: 1fr;
-            }
         }
     </style>
 </head>
 <body>
-    <h1>Color Code Converter 🎨</h1>
-    
-    <div class="converter">
-        <div class="color-preview" id="colorPreview"></div>
+    <div class="container">
+        <h2>Color Code Converter</h2>
         
-        <div class="inputs">
-            <div class="input-group">
-                <input type="text" id="hex" placeholder="#HEX" maxlength="7">
-                <button onclick="copyHex()">Copy HEX</button>
-            </div>
-            
-            <div class="input-group">
-                <input type="text" id="rgb" placeholder="RGB(,,)">
-                <button onclick="copyRgb()">Copy RGB</button>
-            </div>
-            
-            <div class="input-group">
-                <input type="text" id="hsl" placeholder="HSL(,,%)">
-                <button onclick="copyHsl()">Copy HSL</button>
-            </div>
-            
-            <div class="history" id="history"></div>
+        <!-- Color Preview -->
+        <div class="color-box" id="colorBox"></div>
+
+        <!-- Input Sections -->
+        <div class="input-group">
+            <h3>HEX</h3>
+            <input type="text" id="hex" placeholder="#FF0000">
+            <button onclick="copyHex()">Copy HEX</button>
+        </div>
+
+        <div class="input-group">
+            <h3>RGB</h3>
+            <input type="text" id="rgb" placeholder="rgb(255,0,0)">
+            <button onclick="copyRgb()">Copy RGB</button>
+        </div>
+
+        <div class="input-group">
+            <h3>HSL</h3>
+            <input type="text" id="hsl" placeholder="hsl(0,100%,50%)">
+            <button onclick="copyHsl()">Copy HSL</button>
         </div>
     </div>
 
 <script>
-// Initialize
-let currentColor = { r: 46, g: 204, b: 113 };
-const historySize = 10;
-
-// Core Conversion Functions
+// Basic Functions
 function hexToRgb(hex) {
-    hex = hex.replace(/^#/, '');
-    if(hex.length === 3) hex = hex.split('').map(c => c+c).join('');
-    const num = parseInt(hex, 16);
-    return {
-        r: num >> 16,
-        g: (num >> 8) & 255,
-        b: num & 255
-    };
+    hex = hex.replace('#', '');
+    const r = parseInt(hex.substring(0,2), 16);
+    const g = parseInt(hex.substring(2,4), 16);
+    const b = parseInt(hex.substring(4,6), 16);
+    return {r, g, b};
 }
 
-function rgbToHsl(r, g, b) {
-    r /= 255; g /= 255; b /= 255;
-    const max = Math.max(r,g,b), min = Math.min(r,g,b);
-    let h, s, l = (max + min)/2;
-
-    if(max === min) {
-        h = s = 0;
-    } else {
-        const d = max - min;
-        s = l > 0.5 ? d/(2 - max - min) : d/(max + min);
-        switch(max) {
-            case r: h = (g - b)/d + (g < b ? 6 : 0); break;
-            case g: h = (b - r)/d + 2; break;
-            case b: h = (r - g)/d + 4; break;
-        }
-        h *= 60;
-    }
-
-    return {
-        h: Math.round(h),
-        s: Math.round(s*100),
-        l: Math.round(l*100)
-    };
-}
-
-function hslToRgb(h, s, l) {
-    s /= 100;
-    l /= 100;
-    const k = n => (n + h/30) % 12;
-    const a = s * Math.min(l, 1 - l);
-    const f = n => l - a * Math.max(-1, Math.min(k(n) - 3, 9 - k(n), 1));
-    return {
-        r: Math.round(f(0) * 255),
-        g: Math.round(f(8) * 255),
-        b: Math.round(f(4) * 255)
-    };
-}
-
-// Update All Values
-function updateAll(color) {
+function updateColor(r, g, b) {
     // Update HEX
-    const hex = `#${color.r.toString(16).padStart(2,'0')}${color.g.toString(16).padStart(2,'0')}${color.b.toString(16).padStart(2,'0')}`.toUpperCase();
-    hex.value = hex;
+    const hex = `#${r.toString(16).padStart(2,'0')}${g.toString(16).padStart(2,'0')}${b.toString(16).padStart(2,'0')}`.toUpperCase();
     document.getElementById('hex').value = hex;
-    
+
     // Update RGB
-    document.getElementById('rgb').value = `rgb(${color.r}, ${color.g}, ${color.b})`;
-    
+    document.getElementById('rgb').value = `rgb(${r},${g},${b})`;
+
     // Update HSL
-    const hsl = rgbToHsl(color.r, color.g, color.b);
-    document.getElementById('hsl').value = `hsl(${hsl.h}, ${hsl.s}%, ${hsl.l}%)`;
-    
-    // Update Preview
-    document.getElementById('colorPreview').style.backgroundColor = hex;
-    
-    // Update History
-    addToHistory(hex);
+    const hsl = rgbToHsl(r, g, b);
+    document.getElementById('hsl').value = `hsl(${hsl.h},${hsl.s}%,${hsl.l}%)`;
+
+    // Update Color Box
+    document.getElementById('colorBox').style.backgroundColor = hex;
 }
 
 // Event Listeners
 document.getElementById('hex').addEventListener('input', function(e) {
     const hex = e.target.value;
-    if(/^#?([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(hex)) {
-        currentColor = hexToRgb(hex);
-        updateAll(currentColor);
+    if(/^#?[0-9A-F]{6}$/i.test(hex)) {
+        const {r, g, b} = hexToRgb(hex);
+        updateColor(r, g, b);
     }
 });
 
 document.getElementById('rgb').addEventListener('input', function(e) {
-    const match = e.target.value.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/i);
-    if(match) {
-        currentColor = { 
-            r: parseInt(match[1]), 
-            g: parseInt(match[2]), 
-            b: parseInt(match[3]) 
-        };
-        updateAll(currentColor);
+    const rgb = e.target.value.match(/\d+/g);
+    if(rgb && rgb.length === 3) {
+        const [r, g, b] = rgb.map(Number);
+        updateColor(r, g, b);
     }
 });
 
-document.getElementById('hsl').addEventListener('input', function(e) {
-    const match = e.target.value.match(/hsl\((\d+),\s*(\d+)%,\s*(\d+)%\)/i);
-    if(match) {
-        const hsl = {
-            h: parseInt(match[1]),
-            s: parseInt(match[2]),
-            l: parseInt(match[3])
-        };
-        currentColor = hslToRgb(hsl.h, hsl.s, hsl.l);
-        updateAll(currentColor);
-    }
-});
-
-// Clipboard Functions
+// Copy Functions
 function copyHex() {
     navigator.clipboard.writeText(document.getElementById('hex').value);
+    alert('HEX Copied!');
 }
 
 function copyRgb() {
     navigator.clipboard.writeText(document.getElementById('rgb').value);
+    alert('RGB Copied!');
 }
 
 function copyHsl() {
     navigator.clipboard.writeText(document.getElementById('hsl').value);
+    alert('HSL Copied!');
 }
 
-// Color History
-function addToHistory(color) {
-    let history = JSON.parse(localStorage.getItem('colorHistory') || [];
-    history = [color, ...history.filter(c => c !== color)].slice(0, historySize);
-    localStorage.setItem('colorHistory', JSON.stringify(history));
-    updateHistory(history);
-}
-
-function updateHistory(history) {
-    const container = document.getElementById('history');
-    container.innerHTML = history.map(color => `
-        <div class="color-chip" 
-             style="background: ${color}" 
-             onclick="setColorFromHistory('${color}')"
-             title="${color}">
-        </div>
-    `).join('');
-}
-
-function setColorFromHistory(color) {
-    document.getElementById('hex').value = color;
-    currentColor = hexToRgb(color);
-    updateAll(currentColor);
-}
-
-// Initialize
-window.onload = () => {
-    const history = JSON.parse(localStorage.getItem('colorHistory') || []);
-    updateHistory(history);
-    updateAll(currentColor);
-};
+// Initial Color
+updateColor(255, 0, 0); // Red color
 </script>
 </body>
 </html>
