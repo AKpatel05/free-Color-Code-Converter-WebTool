@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en" itemscope itemtype="http://schema.org/WebApplication">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Color Code Converter - HEX RGB HSL Converter Tool</title>
+    <meta name="description" content="Instant color code converter between HEX, RGB and HSL formats. Perfect tool for web designers and developers with color preview and advanced copy features.">
+    
+    <!-- Schema.org Structured Data -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "Color Code Converter",
+        "applicationCategory": "DesignApplication",
+        "operatingSystem": "Web",
+        "featureList": "HEX to RGB, RGB to HSL, Color Preview, Color Palettes",
+        "screenshot": "https://example.com/color-converter-screenshot.jpg"
+    }
+    </script>
+
+    <style>
+        /* Modern CSS with CSS Variables */
+        :root {
+            --primary: #2ecc71;
+            --secondary: #3498db;
+            --background: #f8f9fa;
+            --text: #2c3e50;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui;
+            line-height: 1.6;
+            padding: 2rem;
+            background: var(--background);
+            color: var(--text);
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .converter-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .color-preview {
+            width: 100%;
+            height: 200px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: background 0.3s ease;
+        }
+
+        .input-group {
+            margin: 1.5rem 0;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            margin: 8px 0;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-family: monospace;
+        }
+
+        button {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: opacity 0.3s;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+
+        .color-history {
+            display: flex;
+            gap: 8px;
+            margin: 1rem 0;
+            flex-wrap: wrap;
+        }
+
+        .color-chip {
+            width: 40px;
+            height: 40px;
+            border-radius: 6px;
+            cursor: pointer;
+            border: 2px solid white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        @media (max-width: 768px) {
+            .converter-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .color-preview {
+                height: 150px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Color Code Converter 🎨</h1>
+    <p>Convert between HEX, RGB, and HSL color codes instantly</p>
+
+    <div class="converter-container">
+        <!-- Color Preview Section -->
+        <div class="color-preview" id="colorPreview"></div>
+
+        <!-- Inputs Section -->
+        <div class="inputs">
+            <div class="input-group">
+                <label>HEX</label>
+                <input type="text" id="hexInput" placeholder="#2ecc71" maxlength="7">
+                <button onclick="copyColor('hex')">Copy HEX</button>
+            </div>
+
+            <div class="input-group">
+                <label>RGB</label>
+                <input type="text" id="rgbInput" placeholder="rgb(46, 204, 113)">
+                <button onclick="copyColor('rgb')">Copy RGB</button>
+            </div>
+
+            <div class="input-group">
+                <label>HSL</label>
+                <input type="text" id="hslInput" placeholder="hsl(145, 63%, 49%)">
+                <button onclick="copyColor('hsl')">Copy HSL</button>
+            </div>
+
+            <!-- Color History -->
+            <div class="color-history" id="colorHistory"></div>
+        </div>
+    </div>
+
+<script>
+// Core Conversion Functions
+function hexToRgb(hex) {
+    hex = hex.replace(/^#/, '');
+    const bigint = parseInt(hex, 16);
+    return {
+        r: (bigint >> 16) & 255,
+        g: (bigint >> 8) & 255,
+        b: bigint & 255
+    };
+}
+
+function rgbToHsl(r, g, b) {
+    r /= 255, g /= 255, b /= 255;
+    const max = Math.max(r, g, b), min = Math.min(r, g, b);
+    let h, s, l = (max + min) / 2;
+
+    if(max === min) {
+        h = s = 0;
+    } else {
+        const d = max - min;
+        s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+        switch(max) {
+            case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+            case g: h = (b - r) / d + 2; break;
+            case b: h = (r - g) / d + 4; break;
+        }
+        h *= 60;
+    }
+
+    return {
+        h: Math.round(h),
+        s: Math.round(s * 100),
+        l: Math.round(l * 100)
+    };
+}
+
+function hslToRgb(h, s, l) {
+    s /= 100;
+    l /= 100;
+    
+    const k = n => (n + h/30) % 12;
+    const a = s * Math.min(l, 1 - l);
+    
+    const f = n => l - a * Math.max(-1, Math.min(k(n) - 3, 9 - k(n), 1));
+    
+    return {
+        r: Math.round(f(0) * 255),
+        g: Math.round(f(8) * 255),
+        b: Math.round(f(4) * 255)
+    };
+}
+
+// UI Update Functions
+function updateAllValues(color) {
+    // Update HEX
+    const hex = `#${color.r.toString(16).padStart(2, '0')}${color.g.toString(16).padStart(2, '0')}${color.b.toString(16).padStart(2, '0')}`;
+    hexInput.value = hex.toUpperCase();
+
+    // Update RGB
+    rgbInput.value = `rgb(${color.r}, ${color.g}, ${color.b})`;
+
+    // Update HSL
+    const hsl = rgbToHsl(color.r, color.g, color.b);
+    hslInput.value = `hsl(${hsl.h}, ${hsl.s}%, ${hsl.l}%)`;
+
+    // Update Preview
+    colorPreview.style.backgroundColor = hex;
+    
+    // Add to History
+    addToHistory(hex);
+}
+
+// Event Listeners
+hexInput.addEventListener('input', e => {
+    const hex = e.target.value.replace(/#/g, '');
+    if(/^[0-9A-F]{6}$/i.test(hex)) {
+        const rgb = hexToRgb(hex);
+        updateAllValues(rgb);
+    }
+});
+
+rgbInput.addEventListener('input', e => {
+    const match = e.target.value.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/i);
+    if(match) {
+        const [_, r, g, b] = match;
+        updateAllValues({r: +r, g: +g, b: +b});
+    }
+});
+
+hslInput.addEventListener('input', e => {
+    const match = e.target.value.match(/hsl\((\d+),\s*(\d+)%,\s*(\d+)%\)/i);
+    if(match) {
+        const [_, h, s, l] = match;
+        const rgb = hslToRgb(+h, +s, +l);
+        updateAllValues(rgb);
+    }
+});
+
+// Clipboard Functions
+function copyColor(type) {
+    const value = {
+        hex: hexInput.value,
+        rgb: rgbInput.value,
+        hsl: hslInput.value
+    }[type];
+
+    navigator.clipboard.writeText(value)
+        .then(() => alert(`${type.toUpperCase()} copied!`))
+        .catch(err => console.error('Copy failed:', err));
+}
+
+// Color History
+function addToHistory(color) {
+    const history = JSON.parse(localStorage.getItem('colorHistory') || [];
+    if(!history.includes(color)) {
+        const newHistory = [color, ...history].slice(0, 10);
+        localStorage.setItem('colorHistory', JSON.stringify(newHistory));
+        renderHistory(newHistory);
+    }
+}
+
+function renderHistory(colors) {
+    const container = document.getElementById('colorHistory');
+    container.innerHTML = colors.map(color => `
+        <div class="color-chip" 
+             style="background: ${color}" 
+             onclick="updateFromHistory('${color}')"
+             title="${color}">
+        </div>
+    `).join('');
+}
+
+function updateFromHistory(color) {
+    const rgb = hexToRgb(color.replace('#', ''));
+    updateAllValues(rgb);
+}
+
+// Initialize
+window.onload = () => {
+    const history = JSON.parse(localStorage.getItem('colorHistory') || []);
+    renderHistory(history);
+    updateAllValues({r: 46, g: 204, b: 113}); // Initial color
+};
+</script>
+
+<!-- SEO Hidden Content -->
+<div class="seo-content" style="position:absolute; left:-9999px;">
+    <h1>Color Converter Tool</h1>
+    <p>Free online tool for converting color codes between HEX, RGB and HSL formats. Essential for web designers and developers working with CSS colors.</p>
+    <h2>Key Features</h2>
+    <ul>
+        <li>Instant HEX to RGB conversion</li>
+        <li>Accurate RGB to HSL calculator</li>
+        <li>Color history tracking</li>
+        <li>One-click copy functionality</li>
+    </ul>
+</div>
+
+</body>
+</html>
