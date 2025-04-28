@@ -3,26 +3,48 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Color Converter - Simple Tool</title>
+    <title>All-in-One Color Converter</title>
     <style>
+        /* Basic Reset */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        /* Main Styles */
         body {
-            font-family: Arial, sans-serif;
-            max-width: 600px;
-            margin: 20px auto;
+            font-family: 'Arial', sans-serif;
+            background: #f0f2f5;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
             padding: 20px;
         }
 
         .container {
-            border: 2px solid #ddd;
-            padding: 20px;
-            border-radius: 10px;
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 600px;
         }
 
-        .color-box {
+        h1 {
+            color: #2d3436;
+            margin-bottom: 25px;
+            text-align: center;
+        }
+
+        .color-preview {
+            height: 150px;
             width: 100%;
-            height: 100px;
-            border: 2px solid #333;
+            border-radius: 8px;
             margin: 20px 0;
+            border: 3px solid #ddd;
+            transition: background 0.3s ease;
         }
 
         .input-group {
@@ -31,109 +53,208 @@
 
         input {
             width: 100%;
-            padding: 10px;
-            margin: 5px 0;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
             font-size: 16px;
+            margin: 8px 0;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
         }
 
         button {
-            background: #4CAF50;
-            color: white;
+            padding: 12px 20px;
             border: none;
-            padding: 10px 20px;
-            margin: 5px;
+            border-radius: 6px;
             cursor: pointer;
+            transition: all 0.3s ease;
+            flex: 1;
+        }
+
+        .copy-btn {
+            background: #2ecc71;
+            color: white;
+        }
+
+        .copy-btn:hover {
+            background: #27ae60;
+        }
+
+        .history {
+            margin-top: 25px;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
+            gap: 10px;
+        }
+
+        .color-chip {
+            height: 40px;
+            border-radius: 6px;
+            cursor: pointer;
+            border: 2px solid white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 20px;
+            }
+            
+            button {
+                padding: 10px 15px;
+                font-size: 14px;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h2>Color Code Converter</h2>
+        <h1>🎨 Color Code Converter</h1>
         
-        <!-- Color Preview -->
-        <div class="color-box" id="colorBox"></div>
+        <div class="color-preview" id="colorPreview"></div>
 
-        <!-- Input Sections -->
         <div class="input-group">
-            <h3>HEX</h3>
-            <input type="text" id="hex" placeholder="#FF0000">
-            <button onclick="copyHex()">Copy HEX</button>
+            <input type="text" id="hex" placeholder="HEX #ff0000" maxlength="7">
+            <div class="button-group">
+                <button class="copy-btn" onclick="copyCode('hex')">Copy HEX</button>
+            </div>
         </div>
 
         <div class="input-group">
-            <h3>RGB</h3>
-            <input type="text" id="rgb" placeholder="rgb(255,0,0)">
-            <button onclick="copyRgb()">Copy RGB</button>
+            <input type="text" id="rgb" placeholder="RGB 255,0,0">
+            <div class="button-group">
+                <button class="copy-btn" onclick="copyCode('rgb')">Copy RGB</button>
+            </div>
         </div>
 
         <div class="input-group">
-            <h3>HSL</h3>
-            <input type="text" id="hsl" placeholder="hsl(0,100%,50%)">
-            <button onclick="copyHsl()">Copy HSL</button>
+            <input type="text" id="hsl" placeholder="HSL 0,100%,50%">
+            <div class="button-group">
+                <button class="copy-btn" onclick="copyCode('hsl')">Copy HSL</button>
+            </div>
         </div>
+
+        <div class="history" id="colorHistory"></div>
     </div>
 
-<script>
-// Basic Functions
-function hexToRgb(hex) {
-    hex = hex.replace('#', '');
-    const r = parseInt(hex.substring(0,2), 16);
-    const g = parseInt(hex.substring(2,4), 16);
-    const b = parseInt(hex.substring(4,6), 16);
-    return {r, g, b};
-}
+    <script>
+        // Color Conversion Functions
+        function hexToRgb(hex) {
+            hex = hex.replace(/^#/, '');
+            const bigint = parseInt(hex, 16);
+            return {
+                r: (bigint >> 16) & 255,
+                g: (bigint >> 8) & 255,
+                b: bigint & 255
+            };
+        }
 
-function updateColor(r, g, b) {
-    // Update HEX
-    const hex = `#${r.toString(16).padStart(2,'0')}${g.toString(16).padStart(2,'0')}${b.toString(16).padStart(2,'0')}`.toUpperCase();
-    document.getElementById('hex').value = hex;
+        function rgbToHsl(r, g, b) {
+            r /= 255, g /= 255, b /= 255;
+            const max = Math.max(r, g, b), min = Math.min(r, g, b);
+            let h, s, l = (max + min) / 2;
 
-    // Update RGB
-    document.getElementById('rgb').value = `rgb(${r},${g},${b})`;
+            if(max === min) {
+                h = s = 0;
+            } else {
+                const d = max - min;
+                s = l > 0.5 ? d/(2 - max - min) : d/(max + min);
+                switch(max) {
+                    case r: h = (g - b)/d + (g < b ? 6 : 0); break;
+                    case g: h = (b - r)/d + 2; break;
+                    case b: h = (r - g)/d + 4; break;
+                }
+                h *= 60;
+            }
 
-    // Update HSL
-    const hsl = rgbToHsl(r, g, b);
-    document.getElementById('hsl').value = `hsl(${hsl.h},${hsl.s}%,${hsl.l}%)`;
+            return {
+                h: Math.round(h),
+                s: Math.round(s * 100),
+                l: Math.round(l * 100)
+            };
+        }
 
-    // Update Color Box
-    document.getElementById('colorBox').style.backgroundColor = hex;
-}
+        function updateColor(hex) {
+            // Update Preview
+            document.getElementById('colorPreview').style.backgroundColor = hex;
+            
+            // Update Inputs
+            const rgb = hexToRgb(hex);
+            const hsl = rgbToHsl(rgb.r, rgb.g, rgb.b);
+            
+            document.getElementById('hex').value = hex;
+            document.getElementById('rgb').value = `${rgb.r},${rgb.g},${rgb.b}`;
+            document.getElementById('hsl').value = `${hsl.h},${hsl.s}%,${hsl.l}%`;
+            
+            // Add to History
+            addToHistory(hex);
+        }
 
-// Event Listeners
-document.getElementById('hex').addEventListener('input', function(e) {
-    const hex = e.target.value;
-    if(/^#?[0-9A-F]{6}$/i.test(hex)) {
-        const {r, g, b} = hexToRgb(hex);
-        updateColor(r, g, b);
-    }
-});
+        // Event Listeners
+        document.getElementById('hex').addEventListener('input', function(e) {
+            const hex = e.target.value;
+            if(/^#?[0-9A-F]{6}$/i.test(hex)) {
+                updateColor(hex.replace('#', ''));
+            }
+        });
 
-document.getElementById('rgb').addEventListener('input', function(e) {
-    const rgb = e.target.value.match(/\d+/g);
-    if(rgb && rgb.length === 3) {
-        const [r, g, b] = rgb.map(Number);
-        updateColor(r, g, b);
-    }
-});
+        document.getElementById('rgb').addEventListener('input', function(e) {
+            const rgb = e.target.value.match(/\d+/g);
+            if(rgb && rgb.length === 3) {
+                const [r, g, b] = rgb.map(Number);
+                const hex = `#${r.toString(16).padStart(2,'0')}${g.toString(16).padStart(2,'0')}${b.toString(16).padStart(2,'0')}`;
+                updateColor(hex);
+            }
+        });
 
-// Copy Functions
-function copyHex() {
-    navigator.clipboard.writeText(document.getElementById('hex').value);
-    alert('HEX Copied!');
-}
+        document.getElementById('hsl').addEventListener('input', function(e) {
+            const hsl = e.target.value.match(/\d+/g);
+            if(hsl && hsl.length === 3) {
+                const [h, s, l] = hsl.map(Number);
+                // HSL to RGB conversion logic here
+                // (Previous implementation can be added)
+            }
+        });
 
-function copyRgb() {
-    navigator.clipboard.writeText(document.getElementById('rgb').value);
-    alert('RGB Copied!');
-}
+        // Clipboard Functions
+        function copyCode(type) {
+            const value = document.getElementById(type).value;
+            navigator.clipboard.writeText(value)
+                .then(() => alert(`${type.toUpperCase()} copied!`))
+                .catch(err => console.error('Copy failed:', err));
+        }
 
-function copyHsl() {
-    navigator.clipboard.writeText(document.getElementById('hsl').value);
-    alert('HSL Copied!');
-}
+        // Color History
+        function addToHistory(color) {
+            const history = JSON.parse(localStorage.getItem('colorHistory') || '[]');
+            if(!history.includes(color)) {
+                const newHistory = [color, ...history].slice(0, 10);
+                localStorage.setItem('colorHistory', JSON.stringify(newHistory));
+                renderHistory(newHistory);
+            }
+        }
 
-// Initial Color
-updateColor(255, 0, 0); // Red color
-</script>
+        function renderHistory(colors) {
+            const container = document.getElementById('colorHistory');
+            container.innerHTML = colors.map(color => `
+                <div class="color-chip" 
+                     style="background: #${color}"
+                     onclick="updateColor('${color}')"
+                     title="#${color}">
+                </div>
+            `).join('');
+        }
+
+        // Initialize
+        window.onload = () => {
+            const history = JSON.parse(localStorage.getItem('colorHistory') || '[]');
+            renderHistory(history);
+            updateColor('ff0000'); // Initial red color
+        };
+    </script>
 </body>
 </html>
